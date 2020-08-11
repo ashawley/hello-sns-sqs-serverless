@@ -1,0 +1,21 @@
+{
+  "name": "hello-sns",
+  "version": "0.0.1",
+  "description": "AWS SNS SQS example",
+  "main": "handler.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ashawley/hello-sns-sqs-serverless.git"
+  },
+  "author": "Aaron S. Hawley",
+  "license": "GPLv3+",
+  "homepage": "https://www.github.com/ashawley/hello-sns-sqs-serverless/",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.60",
+    "aws-sdk": "^2.730.0",
+    "serverless-plugin-typescript": "^1.1.9",
+    "ts-node": "^8.10.2",
+    "typescript": "^3.9.7"
+  }
+}

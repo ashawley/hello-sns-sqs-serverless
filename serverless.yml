@@ -1,0 +1,87 @@
+## serverless.yml
+
+service: aahawley-hello-sns
+
+frameworkVersion: ">=1.8.0 <2.0.0"
+
+plugins:
+  - serverless-plugin-typescript
+
+custom:
+  snsTopicName: ${self:service}-${self:provider.stage}-snsTopic
+  sqsQueueName: ${self:service}-${self:provider.stage}-sqsQueue
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: nodejs10.x
+  memorySize: 128
+  environment:
+    TOPIC_NAME:
+      Ref: snsTopic
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "sns:Publish"
+      Resource: !Ref snsTopic
+    - Effect: Allow
+      Action:
+        - "sqs:SendMessage"
+        - "sqs:GetQueueUrl"
+      Resource: !GetAtt sqsQueue.Arn
+
+functions:
+  scheduleEvent:
+    handler: handler.onSchedule
+    environment:
+      TOPIC_ARN: !Ref snsTopic
+    events:
+      - schedule: cron(7/15 * * * ? *)
+  requestEvent:
+    handler: handler.fromRequest
+    environment:
+      TOPIC_ARN: !Ref snsTopic
+    events:
+      - http:
+          path: /hello
+          method: any
+  processEvent:
+    handler: handler.respondTo
+    events:
+      - sqs:
+          arn: !GetAtt sqsQueue.Arn
+
+resources:
+  Resources:
+    snsTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        DisplayName: "SNS topic"
+        TopicName: ${self:custom.snsTopicName}
+    sqsQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: ${self:custom.sqsQueueName}
+    snsSubscription:
+      Type: "AWS::SNS::Subscription"
+      Properties:
+        Endpoint: !GetAtt sqsQueue.Arn
+        TopicArn: !Ref snsTopic
+        FilterPolicy:
+          EventType:
+            - HelloEvent
+        Protocol: "sqs"
+    sqsPolicy:
+      Type: "AWS::SQS::QueuePolicy"
+      Properties:
+        PolicyDocument:
+          Statement:
+            Effect: Allow
+            Principal: "*"
+            Action: SQS:SendMessage
+            Resource: !GetAtt sqsQueue.Arn
+            Condition:
+              ArnEquals:
+                aws:SourceArn: !Ref snsTopic
+        Queues:
+          - !Ref sqsQueue
